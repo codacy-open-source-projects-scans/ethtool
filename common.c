@@ -171,6 +171,8 @@ void dump_mdix(u8 mdix, u8 mdix_ctrl)
 		mdi_x_forced = true;
 	} else {
 		switch (mdix) {
+		case ETH_TP_MDI:
+			break;
 		case ETH_TP_MDI_X:
 			mdi_x = true;
 			break;
@@ -231,8 +233,10 @@ void print_rss_hkey(u8 *hkey, u32 hkey_size)
 	u32 i;
 
 	printf("RSS hash key:\n");
-	if (!hkey_size || !hkey)
+	if (!hkey_size || !hkey) {
 		printf("Operation not supported\n");
+		return;
+	}
 
 	for (i = 0; i < hkey_size; i++) {
 		if (i == (hkey_size - 1))

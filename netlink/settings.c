@@ -178,6 +178,24 @@ static const struct link_mode_info link_modes[] = {
 	[ETHTOOL_LINK_MODE_10baseT1S_Half_BIT]		= __HALF_DUPLEX(10),
 	[ETHTOOL_LINK_MODE_10baseT1S_P2MP_Half_BIT]	= __HALF_DUPLEX(10),
 	[ETHTOOL_LINK_MODE_10baseT1BRR_Full_BIT]	= __REAL(10),
+	[ETHTOOL_LINK_MODE_200000baseCR_Full_BIT]	= __REAL(200000),
+	[ETHTOOL_LINK_MODE_200000baseKR_Full_BIT]	= __REAL(200000),
+	[ETHTOOL_LINK_MODE_200000baseDR_Full_BIT]	= __REAL(200000),
+	[ETHTOOL_LINK_MODE_200000baseDR_2_Full_BIT]	= __REAL(200000),
+	[ETHTOOL_LINK_MODE_200000baseSR_Full_BIT]	= __REAL(200000),
+	[ETHTOOL_LINK_MODE_200000baseVR_Full_BIT]	= __REAL(200000),
+	[ETHTOOL_LINK_MODE_400000baseCR2_Full_BIT]	= __REAL(400000),
+	[ETHTOOL_LINK_MODE_400000baseKR2_Full_BIT]	= __REAL(400000),
+	[ETHTOOL_LINK_MODE_400000baseDR2_Full_BIT]	= __REAL(400000),
+	[ETHTOOL_LINK_MODE_400000baseDR2_2_Full_BIT]	= __REAL(400000),
+	[ETHTOOL_LINK_MODE_400000baseSR2_Full_BIT]	= __REAL(400000),
+	[ETHTOOL_LINK_MODE_400000baseVR2_Full_BIT]	= __REAL(400000),
+	[ETHTOOL_LINK_MODE_800000baseCR4_Full_BIT]	= __REAL(800000),
+	[ETHTOOL_LINK_MODE_800000baseKR4_Full_BIT]	= __REAL(800000),
+	[ETHTOOL_LINK_MODE_800000baseDR4_Full_BIT]	= __REAL(800000),
+	[ETHTOOL_LINK_MODE_800000baseDR4_2_Full_BIT]	= __REAL(800000),
+	[ETHTOOL_LINK_MODE_800000baseSR4_Full_BIT]	= __REAL(800000),
+	[ETHTOOL_LINK_MODE_800000baseVR4_Full_BIT]	= __REAL(800000),
 };
 const unsigned int link_modes_count = ARRAY_SIZE(link_modes);
 
@@ -546,7 +564,7 @@ int linkmodes_reply_cb(const struct nlmsghdr *nlhdr, void *data)
 						(autoneg == AUTONEG_DISABLE) ? "off" : "on");
 		else
 			print_bool(PRINT_JSON, "auto-negotiation", NULL,
-				   autoneg == AUTONEG_DISABLE);
+				   autoneg != AUTONEG_DISABLE);
 	}
 	if (tb[ETHTOOL_A_LINKMODES_MASTER_SLAVE_CFG]) {
 		uint8_t val;
@@ -605,7 +623,7 @@ int linkinfo_reply_cb(const struct nlmsghdr *nlhdr, void *data)
 		uint8_t val = mnl_attr_get_u8(tb[ETHTOOL_A_LINKINFO_PHYADDR]);
 
 		print_banner(nlctx);
-		print_uint(PRINT_ANY, "phyad", "\tPHYAD: %x\n", val);
+		print_uint(PRINT_ANY, "phyad", "\tPHYAD: %u\n", val);
 	}
 	if (tb[ETHTOOL_A_LINKINFO_TRANSCEIVER]) {
 		uint8_t val;

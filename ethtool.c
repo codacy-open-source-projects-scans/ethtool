@@ -520,6 +520,24 @@ static void init_global_link_mode_masks(void)
 		ETHTOOL_LINK_MODE_10baseT1S_Half_BIT,
 		ETHTOOL_LINK_MODE_10baseT1S_P2MP_Half_BIT,
 		ETHTOOL_LINK_MODE_10baseT1BRR_Full_BIT,
+		ETHTOOL_LINK_MODE_200000baseCR_Full_BIT,
+		ETHTOOL_LINK_MODE_200000baseKR_Full_BIT,
+		ETHTOOL_LINK_MODE_200000baseDR_Full_BIT,
+		ETHTOOL_LINK_MODE_200000baseDR_2_Full_BIT,
+		ETHTOOL_LINK_MODE_200000baseSR_Full_BIT,
+		ETHTOOL_LINK_MODE_200000baseVR_Full_BIT,
+		ETHTOOL_LINK_MODE_400000baseCR2_Full_BIT,
+		ETHTOOL_LINK_MODE_400000baseKR2_Full_BIT,
+		ETHTOOL_LINK_MODE_400000baseDR2_Full_BIT,
+		ETHTOOL_LINK_MODE_400000baseDR2_2_Full_BIT,
+		ETHTOOL_LINK_MODE_400000baseSR2_Full_BIT,
+		ETHTOOL_LINK_MODE_400000baseVR2_Full_BIT,
+		ETHTOOL_LINK_MODE_800000baseCR4_Full_BIT,
+		ETHTOOL_LINK_MODE_800000baseKR4_Full_BIT,
+		ETHTOOL_LINK_MODE_800000baseDR4_Full_BIT,
+		ETHTOOL_LINK_MODE_800000baseDR4_2_Full_BIT,
+		ETHTOOL_LINK_MODE_800000baseSR4_Full_BIT,
+		ETHTOOL_LINK_MODE_800000baseVR4_Full_BIT,
 	};
 	static const enum ethtool_link_mode_bit_indices
 		additional_advertised_flags_bits[] = {
@@ -782,6 +800,42 @@ static void dump_link_caps(const char *prefix, const char *an_prefix,
 		  "10baseT1S/Half" },
 		{ 0, ETHTOOL_LINK_MODE_10baseT1BRR_Full_BIT,
 		  "10baseT1BRR/Full" },
+		{ 0, ETHTOOL_LINK_MODE_200000baseCR_Full_BIT,
+		  "200000baseCR/Full" },
+		{ 0, ETHTOOL_LINK_MODE_200000baseKR_Full_BIT,
+		  "200000baseKR/Full" },
+		{ 0, ETHTOOL_LINK_MODE_200000baseDR_Full_BIT,
+		  "200000baseDR/Full" },
+		{ 0, ETHTOOL_LINK_MODE_200000baseDR_2_Full_BIT,
+		  "200000baseDR_2/Full" },
+		{ 0, ETHTOOL_LINK_MODE_200000baseSR_Full_BIT,
+		  "200000baseSR/Full" },
+		{ 0, ETHTOOL_LINK_MODE_200000baseVR_Full_BIT,
+		  "200000baseVR/Full" },
+		{ 0, ETHTOOL_LINK_MODE_400000baseCR2_Full_BIT,
+		  "400000baseCR2/Full" },
+		{ 0, ETHTOOL_LINK_MODE_400000baseKR2_Full_BIT,
+		  "400000baseKR2/Full" },
+		{ 0, ETHTOOL_LINK_MODE_400000baseDR2_Full_BIT,
+		  "400000baseDR2/Full" },
+		{ 0, ETHTOOL_LINK_MODE_400000baseDR2_2_Full_BIT,
+		  "400000baseDR2_2/Full" },
+		{ 0, ETHTOOL_LINK_MODE_400000baseSR2_Full_BIT,
+		  "400000baseSR2/Full" },
+		{ 0, ETHTOOL_LINK_MODE_400000baseVR2_Full_BIT,
+		  "400000baseVR2/Full" },
+		{ 0, ETHTOOL_LINK_MODE_800000baseCR4_Full_BIT,
+		  "800000baseCR4/Full" },
+		{ 0, ETHTOOL_LINK_MODE_800000baseKR4_Full_BIT,
+		  "800000baseKR4/Full" },
+		{ 0, ETHTOOL_LINK_MODE_800000baseDR4_Full_BIT,
+		  "800000baseDR4/Full" },
+		{ 0, ETHTOOL_LINK_MODE_800000baseDR4_2_Full_BIT,
+		  "800000baseDR4_2/Full" },
+		{ 0, ETHTOOL_LINK_MODE_800000baseSR4_Full_BIT,
+		  "800000baseSR4/Full" },
+		{ 0, ETHTOOL_LINK_MODE_800000baseVR4_Full_BIT,
+		  "800000baseVR4/Full" },
 	};
 	int indent;
 	int did1, new_line_pend;
@@ -1206,6 +1260,9 @@ static const struct {
 	{ "fsl_enetc", fsl_enetc_dump_regs },
 	{ "fsl_enetc_vf", fsl_enetc_dump_regs },
 	{ "hns3", hns3_dump_regs },
+	{ "fbnic", fbnic_dump_regs },
+	{ "hibmcge", hibmcge_dump_regs },
+	{ "am65-cpsw-nuss", am65_cpsw_dump_regs },
 };
 #endif
 
@@ -3883,8 +3940,10 @@ static int do_srxclass(struct cmd_context *ctx)
 			nfccmd.flow_type |= FLOW_RSS;
 
 		err = send_ioctl(ctx, &nfccmd);
-		if (err < 0)
+		if (err < 0) {
 			perror("Cannot change RX network flow hashing options");
+			return 1;
+		}
 	} else if (!strcmp(ctx->argp[0], "flow-type")) {
 		struct ethtool_rx_flow_spec rx_rule_fs;
 		__u32 rss_context = 0;
@@ -4104,14 +4163,26 @@ static int do_grxfh(struct cmd_context *ctx)
 		return 1;
 	}
 
-	for (i = 0; i < hfuncs->len; i++)
+	for (i = 0; i < hfuncs->len; i++) {
 		printf("    %s: %s\n",
 		       (const char *)hfuncs->data + i * ETH_GSTRING_LEN,
 		       (rss->hfunc & (1 << i)) ? "on" : "off");
+		rss->hfunc &= ~(1 << i);
+	}
+	if (rss->hfunc)
+		printf("    Unknown hash function: 0x%x\n", rss->hfunc);
 
 	printf("RSS input transformation:\n");
 	printf("    symmetric-xor: %s\n",
 	       (rss->input_xfrm & RXH_XFRM_SYM_XOR) ? "on" : "off");
+	rss->input_xfrm &= ~RXH_XFRM_SYM_XOR;
+	printf("    symmetric-or-xor: %s\n",
+	       (rss->input_xfrm & RXH_XFRM_SYM_OR_XOR) ? "on" : "off");
+	rss->input_xfrm &= ~RXH_XFRM_SYM_OR_XOR;
+
+	if (rss->input_xfrm)
+		printf("    Unknown bits in RSS input transformation: 0x%x\n",
+		       rss->input_xfrm);
 
 out:
 	free(hfuncs);
@@ -4230,7 +4301,7 @@ static int do_srxfh(struct cmd_context *ctx)
 	u32 arg_num = 0, indir_bytes = 0;
 	u32 req_hfunc = 0;
 	u32 entry_size = sizeof(rss_head.rss_config[0]);
-	u32 req_input_xfrm = 0xff;
+	u32 req_input_xfrm = RXH_XFRM_NO_CHANGE;
 	u32 num_weights = 0;
 	u32 rss_context = 0;
 	int delete = 0;
@@ -4280,6 +4351,8 @@ static int do_srxfh(struct cmd_context *ctx)
 				exit_bad_args();
 			if (!strcmp(ctx->argp[arg_num], "symmetric-xor"))
 				req_input_xfrm = RXH_XFRM_SYM_XOR;
+			else if (!strcmp(ctx->argp[arg_num], "symmetric-or-xor"))
+				req_input_xfrm = RXH_XFRM_SYM_OR_XOR;
 			else if (!strcmp(ctx->argp[arg_num], "none"))
 				req_input_xfrm = 0;
 			else
@@ -5005,6 +5078,8 @@ static int do_getmodule(struct cmd_context *ctx)
 		    (eeprom->len != modinfo.eeprom_len)) {
 			geeprom_dump_hex = 1;
 		} else if (!geeprom_dump_hex) {
+			new_json_obj(ctx->json);
+			open_json_object(NULL);
 			switch (modinfo.type) {
 #ifdef ETHTOOL_ENABLE_PRETTY_DUMP
 			case ETH_MODULE_SFF_8079:
@@ -5024,6 +5099,8 @@ static int do_getmodule(struct cmd_context *ctx)
 				geeprom_dump_hex = 1;
 				break;
 			}
+			close_json_object();
+			delete_json_obj();
 		}
 		if (geeprom_dump_hex)
 			dump_hex(stdout, eeprom->data,
@@ -5854,6 +5931,7 @@ static const struct option args[] = {
 			  "		[ tx-push on|off ]\n"
 			  "		[ rx-push on|off ]\n"
 			  "		[ tx-push-buf-len N]\n"
+			  "		[ hds-thresh N ]\n"
 	},
 	{
 		.opts	= "-k|--show-features|--show-offload",
@@ -5972,7 +6050,19 @@ static const struct option args[] = {
 		.opts	= "-T|--show-time-stamping",
 		.func	= do_tsinfo,
 		.nlfunc	= nl_tsinfo,
-		.help	= "Show time stamping capabilities"
+		.help	= "Show time stamping capabilities",
+		.xhelp	= "		[ index N qualifier precise|approx ]\n"
+	},
+	{
+		.opts	= "--get-hwtimestamp-cfg",
+		.nlfunc	= nl_gtsconfig,
+		.help	= "Get selected hardware time stamping"
+	},
+	{
+		.opts	= "--set-hwtimestamp-cfg",
+		.nlfunc	= nl_stsconfig,
+		.help	= "Select hardware time stamping",
+		.xhelp	= "		[ index N qualifier precise|approx ]\n"
 	},
 	{
 		.opts	= "-x|--show-rxfh-indir|--show-rxfh",
@@ -5990,7 +6080,7 @@ static const struct option args[] = {
 			  "		[ equal N | weight W0 W1 ... | default ]\n"
 			  "		[ hkey %x:%x:%x:%x:%x:.... ]\n"
 			  "		[ hfunc FUNC ]\n"
-			  "		[ xfrm symmetric-xor|none ]\n"
+			  "		[ xfrm symmetric-xor | symmetric-or-xor | none ]\n"
 			  "		[ delete ]\n"
 	},
 	{
@@ -6019,6 +6109,7 @@ static const struct option args[] = {
 	},
 	{
 		.opts	= "-l|--show-channels",
+		.json	= true,
 		.func	= do_gchannels,
 		.nlfunc	= nl_gchannels,
 		.help	= "Query Channels"
@@ -6048,6 +6139,7 @@ static const struct option args[] = {
 	},
 	{
 		.opts	= "-m|--dump-module-eeprom|--module-info",
+		.json	= true,
 		.func	= do_getmodule,
 		.nlfunc = nl_getmodule,
 		.help	= "Query/Decode Module EEPROM information and optical diagnostics if available",
@@ -6247,6 +6339,7 @@ static const struct option args[] = {
 		.xhelp	= "		[ podl-pse-admin-control enable|disable ]\n"
 			  "		[ c33-pse-admin-control enable|disable ]\n"
 			  "		[ c33-pse-avail-pw-limit N ]\n"
+			  "		[ prio N ]\n"
 	},
 	{
 		.opts	= "--flash-module-firmware",
@@ -6296,7 +6389,7 @@ static int show_usage(struct cmd_context *ctx __maybe_unused)
 	fprintf(stdout, "\n");
 	fprintf(stdout, "FLAGS:\n");
 	fprintf(stdout, "	--debug MASK	turn on debugging messages\n");
-	fprintf(stdout, "	--json		enable JSON output format (not supported by all commands)\n");
+	fprintf(stdout, "	-j|--json	enable JSON output format (not supported by all commands)\n");
 	fprintf(stdout, "	-I|--include-statistics		request device statistics related to the command (not supported by all commands)\n");
 
 	return 0;
@@ -6558,7 +6651,8 @@ int main(int argc, char **argp)
 			argc -= 1;
 			continue;
 		}
-		if (*argp && !strcmp(*argp, "--json")) {
+		if (*argp && (!strcmp(*argp, "--json") ||
+			      !strcmp(*argp, "-j"))) {
 			ctx.json = true;
 			argp += 1;
 			argc -= 1;
