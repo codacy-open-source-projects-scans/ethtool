@@ -357,6 +357,10 @@ ethtool \- query or control network driver and hardware settings
 .IR N
 .BI qualifier
 .IR precise|approx ]
+.RB [ tx
+.IR TX-TYPE ]
+.RB [ rx-filter
+.IR RX-FILTER ]
 .HP
 .B ethtool \-x|\-\-show\-rxfh\-indir|\-\-show\-rxfh
 .I devname
@@ -1122,6 +1126,7 @@ s	Hash on the IP source address of the rx packet.
 d	Hash on the IP destination address of the rx packet.
 f	Hash on bytes 0 and 1 of the Layer 4 header of the rx packet.
 n	Hash on bytes 2 and 3 of the Layer 4 header of the rx packet.
+l	Hash on IPv6 Flow Label of the rx packet.
 r	T{
 Discard all packets of this flow type. When this option is set, all
 other options are ignored.
@@ -1286,7 +1291,7 @@ for IEEE 1588 quality and "approx" is for NICs DMA point.
 Show the selected time stamping PTP hardware clock configuration.
 .TP
 .B \-\-set\-hwtimestamp\-cfg
-Select the device's time stamping PTP hardware clock.
+Sets the device's time stamping PTP hardware clock configuration.
 .RS 4
 .TP
 .BI index \ N
@@ -1295,6 +1300,12 @@ Index of the ptp hardware clock
 .BI qualifier \ precise | approx
 Qualifier of the ptp hardware clock. Mainly "precise" the default one is
 for IEEE 1588 quality and "approx" is for NICs DMA point.
+.TP
+.BI tx \ TX-TYPE
+Type of TX time stamping to configure
+.TP
+.BI rx-filter \ RX-FILTER
+Type of RX time stamping filter to configure
 .RE
 .TP
 .B \-x \-\-show\-rxfh\-indir \-\-show\-rxfh
